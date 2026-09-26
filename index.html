@@ -2,91 +2,148 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RekapData</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FleetCheck - Mobile Inspection</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Font Sans-Serif Modern -->
+  
+  <!-- Font Google Plus Jakarta Sans & Icons Font Awesome -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="light">
   <div class="mobile-container">
     
-    <!-- Top Bar -->
+    <!-- Top Header -->
     <header class="top-bar">
       <div class="brand">
-        <span class="brand-badge">FC</span>
-        <h1>RekapData</h1>
+        <div class="brand-badge">
+          <i class="fa-solid fa-truck-ramp-box"></i>
+        </div>
+        <div>
+          <h1>FleetCheck</h1>
+          <span class="sub-header-text">Sistem Audit Kendaraan</span>
+        </div>
       </div>
       <button id="themeToggleBtn" type="button" aria-label="Toggle Theme" class="btn-icon">
         <span id="themeIcon">🌙</span>
       </button>
     </header>
 
-    <!-- Navigasi Tab -->
+    <!-- Navigasi Tab Segmented Modern -->
     <nav class="tab-nav">
-      <button class="tab-btn active" data-tab="tab-checkin">Check-in</button>
-      <button class="tab-btn" data-tab="tab-rekap">Rekap Data</button>
-      <button class="tab-btn" data-tab="tab-cetak">Cetak</button>
+      <button class="tab-btn active" data-tab="tab-checkin">
+        <i class="fa-solid fa-clipboard-check"></i>
+        <span>Check-in</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-rekap">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <span>Rekap Data</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-cetak">
+        <i class="fa-solid fa-file-pdf"></i>
+        <span>Cetak</span>
+      </button>
     </nav>
 
-    <!-- Konten Utama -->
+    <!-- Konten Tab -->
     <main class="tab-content">
       
       <!-- TAB 1: FORM CHECK-IN -->
       <section id="tab-checkin" class="tab-pane active">
-        <form id="checkinForm">
+        <form id="checkinForm" autocomplete="off">
+          
           <!-- Identitas Unit -->
           <div class="card">
-            <h2 class="card-title">Identitas Kendaraan</h2>
+            <div class="card-header">
+              <i class="fa-solid fa-id-card card-icon"></i>
+              <h2 class="card-title">Identitas Kendaraan</h2>
+            </div>
+            
             <div class="form-group">
               <label for="nopolInput">Nomor Polisi (Nopol)</label>
-              <input type="text" id="nopolInput" placeholder="B 1234 ABC" required>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-hashtag input-icon"></i>
+                <input type="text" id="nopolInput" placeholder="B 1234 ABC" required>
+              </div>
             </div>
-            <div class="form-group">
-              <label for="checkinDate">Tanggal & Waktu</label>
-              <input type="datetime-local" id="checkinDate" required>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="checkinDate">Tanggal & Waktu</label>
+                <input type="datetime-local" id="checkinDate" required>
+              </div>
+              <div class="form-group">
+                <label for="odometer">Odometer (KM)</label>
+                <div class="input-with-icon">
+                  <i class="fa-solid fa-gauge-high input-icon"></i>
+                  <input type="number" id="odometer" placeholder="0" min="0" required>
+                </div>
+              </div>
             </div>
+
             <div class="form-group">
               <label for="checkerName">Nama Checker</label>
-              <input type="text" id="checkerName" placeholder="Nama Petugas" required>
-            </div>
-            <div class="form-group">
-              <label for="odometer">Odometer (KM)</label>
-              <input type="number" id="odometer" placeholder="0" min="0" required>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-user-check input-icon"></i>
+                <input type="text" id="checkerName" placeholder="Nama Petugas Lapangan" required>
+              </div>
             </div>
           </div>
 
           <!-- Kategori Checklist: Mesin -->
           <div class="card">
-            <h2 class="card-title">Bagian Mesin</h2>
+            <div class="card-header">
+              <i class="fa-solid fa-gears card-icon"></i>
+              <h2 class="card-title">Bagian Mesin</h2>
+            </div>
             <div id="checklist-mesin" class="checklist-group"></div>
           </div>
 
           <!-- Kategori Checklist: Depan -->
           <div class="card">
-            <h2 class="card-title">Bagian Depan</h2>
+            <div class="card-header">
+              <i class="fa-solid fa-car-side card-icon"></i>
+              <h2 class="card-title">Bagian Depan</h2>
+            </div>
             <div id="checklist-depan" class="checklist-group"></div>
           </div>
 
           <!-- Kategori Checklist: Samping -->
           <div class="card">
-            <h2 class="card-title">Bagian Samping (Kiri & Kanan)</h2>
+            <div class="card-header">
+              <i class="fa-solid fa-arrows-left-right card-icon"></i>
+              <h2 class="card-title">Bagian Samping (Kiri & Kanan)</h2>
+            </div>
             <div id="checklist-samping" class="checklist-group"></div>
           </div>
 
           <!-- Kategori Checklist: Belakang -->
           <div class="card">
-            <h2 class="card-title">Bagian Belakang</h2>
+            <div class="card-header">
+              <i class="fa-solid fa-shield-halved card-icon"></i>
+              <h2 class="card-title">Bagian Belakang</h2>
+            </div>
             <div id="checklist-belakang" class="checklist-group"></div>
           </div>
 
           <!-- Dokumentasi Foto -->
           <div class="card">
-            <h2 class="card-title">Dokumentasi Foto Terbaru</h2>
-            <div class="upload-wrapper">
+            <div class="card-header">
+              <i class="fa-solid fa-camera card-icon"></i>
+              <h2 class="card-title">Dokumentasi Foto Fisik</h2>
+            </div>
+            
+            <div class="upload-area">
               <input type="file" id="fotoInput" accept="image/*" capture="environment" class="file-input">
+              <div class="upload-dummy">
+                <div class="upload-btn-ui">
+                  <i class="fa-solid fa-camera-retro"></i>
+                  <span>Ambil / Unggah Foto</span>
+                </div>
+                <small class="upload-hint">Foto otomatis dikompres sebelum dikirim</small>
+              </div>
               <div id="previewContainer" class="preview-box hidden">
                 <img id="imagePreview" alt="Preview Foto">
               </div>
@@ -95,58 +152,69 @@
 
           <!-- Submit Button -->
           <button type="submit" id="btnSubmit" class="btn btn-primary full-width">
-            Simpan Check-in
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>Simpan Check-in</span>
           </button>
         </form>
       </section>
 
       <!-- TAB 2: REKAP DATA -->
       <section id="tab-rekap" class="tab-pane">
-        <div class="card">
-          <div class="form-group">
+        <div class="card filter-card">
+          <div class="search-input-wrapper">
+            <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="searchKeyword" placeholder="Cari Nopol atau Checker...">
           </div>
           <div class="filter-grid">
             <select id="filterStatus">
               <option value="ALL">Semua Kondisi</option>
-              <option value="AMAN">Hanya Aman</option>
+              <option value="AMAN">Kondisi Aman</option>
               <option value="PERBAIKAN">Perlu Perbaikan</option>
             </select>
             <input type="date" id="filterDate">
           </div>
         </div>
+
         <div id="rekapList" class="rekap-container">
-          <!-- Kartu riwayat akan digenerate dinamis oleh JS -->
+          <!-- Kartu riwayat dimuat dinamis -->
         </div>
       </section>
 
       <!-- TAB 3: CETAK LAPORAN -->
       <section id="tab-cetak" class="tab-pane">
         <div class="card">
-          <h2 class="card-title">Ekspor & Cetak Laporan</h2>
-          <p class="text-muted">Pilih dokumen inspeksi yang ingin dicetak langsung ke PDF atau printer fisik.</p>
-          <div class="form-group mt-3">
+          <div class="card-header">
+            <i class="fa-solid fa-print card-icon"></i>
+            <h2 class="card-title">Cetak Dokumen Pemeriksaan</h2>
+          </div>
+          <p class="text-muted mb-3">Pilih data kendaraan untuk mencetak lembar inspeksi fisik resmi ke kertas atau ekspor ke PDF.</p>
+          
+          <div class="form-group">
             <label for="selectUnitCetak">Pilih Kendaraan:</label>
             <select id="selectUnitCetak"></select>
           </div>
-          <button type="button" id="btnPrintUnit" class="btn btn-primary full-width mt-2">Cetak Lembar Unit</button>
+          <button type="button" id="btnPrintUnit" class="btn btn-primary full-width mt-2">
+            <i class="fa-solid fa-file-export"></i> Cetak Lembar Unit
+          </button>
         </div>
       </section>
 
     </main>
 
-    <!-- Detail Modal -->
+    <!-- Modal Detail Ringkasan -->
     <div id="detailModal" class="modal hidden">
       <div class="modal-content">
-        <span id="closeModalBtn" class="modal-close">&times;</span>
-        <h3 id="modalNopol" class="modal-title"></h3>
+        <div class="modal-header">
+          <h3 id="modalNopol" class="modal-title"></h3>
+          <span id="closeModalBtn" class="modal-close">&times;</span>
+        </div>
         <div id="modalBody" class="modal-body"></div>
       </div>
     </div>
 
   </div>
 
-  <!-- Template Cetak (Hanya Muncul Saat Mode Print) -->
+  <!-- Area Cetak Standar -->
   <div id="printableArea" class="print-only"></div>
 
   <script src="script.js"></script>
