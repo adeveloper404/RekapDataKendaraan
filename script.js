@@ -1,4 +1,4 @@
-// Ganti URL endpoint berikut dengan Deployment Web App Google Apps Script Anda
+// Endpoint URL Apps Script Anda
 const GAS_ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbyH6JqClMv4W4Pt5pew2jk7bovgVpGbQI7wOzr-zIjxDFW3mHzUM7GcZ79GWQf-RuqU/exec";
 
 // Master Checklist Item Sesuai PRD
@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setDefaultDateTime();
   initImageCompression();
   bindFormEvents();
-  loadData();
+  loadData(); // Memanggil sinkronisasi Google Sheets
 });
 
 // 1. Theme Switcher
@@ -99,12 +99,11 @@ function renderChecklistInputs() {
         <input type="text" id="${fieldId}_note" class="notes-input hidden" placeholder="Catatan kerusakan (wajib)...">
       `;
 
-      // Event listener chips
       const chips = div.querySelectorAll(".chip");
       const noteInput = div.querySelector(".notes-input");
 
       chips.forEach(chip => {
-        chip.addEventListener("click", (e) => {
+        chip.addEventListener("click", () => {
           chips.forEach(c => c.classList.remove("selected"));
           chip.classList.add("selected");
           const val = chip.querySelector("input").value;
@@ -131,7 +130,7 @@ function setDefaultDateTime() {
   document.getElementById("checkinDate").value = localISOTime;
 }
 
-// 4. Kompresi Gambar Otomatis (Max Width/Height 1200px)
+// 4. Kompresi Gambar
 function initImageCompression() {
   const input = document.getElementById("fotoInput");
   const previewBox = document.getElementById("previewContainer");
@@ -164,7 +163,6 @@ function initImageCompression() {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Kompresi ke format JPEG kualitas 75%
         compressedBase64Image = canvas.toDataURL("image/jpeg", 0.75);
         imgPreview.src = compressedBase64Image;
         previewBox.classList.remove("hidden");
@@ -174,12 +172,11 @@ function initImageCompression() {
   });
 }
 
-// 5. Submit Form & Kirim ke GAS Endpoint
+// 5. Submit Form & Simpan
 function bindFormEvents() {
   const form = document.getElementById("checkinForm");
   const btnSubmit = document.getElementById("btnSubmit");
 
-  // Nopol Auto-Uppercase
   document.getElementById("nopolInput").addEventListener("input", (e) => {
     e.target.value = e.target.value.toUpperCase();
   });
@@ -189,7 +186,6 @@ function bindFormEvents() {
     btnSubmit.disabled = true;
     btnSubmit.innerText = "Mengunggah & Menyimpan...";
 
-    // Bentuk payload detail
     const details = [];
     let summaryStatus = "Aman";
 
@@ -205,7 +201,6 @@ function bindFormEvents() {
     });
 
     const payload = {
-      action: "insertCheckin",
       tanggal_checkin: document.getElementById("checkinDate").value,
       nopol: document.getElementById("nopolInput").value,
       checker: document.getElementById("checkerName").value,
@@ -216,23 +211,20 @@ function bindFormEvents() {
     };
 
     try {
-      if (GAS_ENDPOINT_URL.includes("YOUR_SCRIPT_ID")) {
-        // Fallback simpan lokal jika belum dipasang Script ID
-        saveLocalData(payload);
-        alert("Peringatan: URL Apps Script belum diisi. Data disimpan ke penyimpanan browser (localStorage).");
-      } else {
-        await fetch(GAS_ENDPOINT_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        saveLocalData(payload);
-        alert("Check-in berhasil disimpan dan foto terunggah!");
-      }
+      await fetch(GAS_ENDPOINT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      
+      saveLocalData(payload);
+      alert("Check-in berhasil disimpan!");
+
       form.reset();
       document.getElementById("previewContainer").classList.add("hidden");
       compressedBase64Image = "";
+      setDefaultDateTime();
       loadData();
     } catch (err) {
       console.error(err);
@@ -243,17 +235,14 @@ function bindFormEvents() {
     }
   });
 
-  // Filter Event
   document.getElementById("searchKeyword").addEventListener("input", filterRekapData);
   document.getElementById("filterStatus").addEventListener("change", filterRekapData);
   document.getElementById("filterDate").addEventListener("change", filterRekapData);
   
-  // Modal Close
   document.getElementById("closeModalBtn").onclick = () => {
     document.getElementById("detailModal").classList.add("hidden");
   };
 
-  // Trigger Print Unit
   document.getElementById("btnPrintUnit").addEventListener("click", () => {
     const selectedIdx = document.getElementById("selectUnitCetak").value;
     const item = rawInspectionData[selectedIdx];
@@ -267,12 +256,35 @@ function saveLocalData(data) {
   localStorage.setItem("fc_records", JSON.stringify(local));
 }
 
-function loadData() {
+// 6. Sinkronisasi Data dari Google Sheets
+async function loadData() {
+  const listContainer = document.getElementById("rekapList");
+
+  // 1. Tampilkan data lokal terlebih dahulu jika ada
   rawInspectionData = JSON.parse(localStorage.getItem("fc_records") || "[]");
   filterRekapData();
+
+  // 2. Fetch data online dari Google Sheets via doGet
+  if (listContainer && rawInspectionData.length === 0) {
+    listContainer.innerHTML = `<div style="text-align:center; padding:1.5rem; font-size:0.85rem; color:var(--text-muted);">Memuat riwayat dari Google Sheets...</div>`;
+  }
+
+  try {
+    const response = await fetch(GAS_ENDPOINT_URL);
+    const res = await response.json();
+
+    if (res.status === "success" && Array.isArray(res.data)) {
+      // Urutkan dari data paling baru
+      rawInspectionData = res.data.reverse();
+      localStorage.setItem("fc_records", JSON.stringify(rawInspectionData));
+      filterRekapData();
+    }
+  } catch (err) {
+    console.warn("Gagal terhubung ke Google Sheets, menggunakan data tersimpan:", err);
+  }
 }
 
-// 6. Pencarian & Filter Rekap
+// 7. Pencarian & Filter Rekap
 function filterRekapData() {
   const q = document.getElementById("searchKeyword").value.toLowerCase();
   const statusFilter = document.getElementById("filterStatus").value;
@@ -281,22 +293,29 @@ function filterRekapData() {
   listContainer.innerHTML = "";
 
   const filtered = rawInspectionData.filter(d => {
-    const matchQ = d.nopol.toLowerCase().includes(q) || d.checker.toLowerCase().includes(q);
+    const nopolStr = (d.nopol || "").toLowerCase();
+    const checkerStr = (d.checker || "").toLowerCase();
+    const matchQ = nopolStr.includes(q) || checkerStr.includes(q);
     const matchStatus = statusFilter === "ALL" || 
       (statusFilter === "AMAN" && d.ringkasan_status === "Aman") ||
       (statusFilter === "PERBAIKAN" && d.ringkasan_status === "Perlu Perbaikan");
-    const matchDate = !dateFilter || d.tanggal_checkin.startsWith(dateFilter);
+    const matchDate = !dateFilter || (d.tanggal_checkin && d.tanggal_checkin.startsWith(dateFilter));
     return matchQ && matchStatus && matchDate;
   });
 
-  filtered.forEach((item, index) => {
+  if (filtered.length === 0) {
+    listContainer.innerHTML = `<div style="text-align:center; padding:1.5rem; font-size:0.85rem; color:var(--text-muted);">Tidak ada data inspeksi ditemukan.</div>`;
+    return;
+  }
+
+  filtered.forEach(item => {
     const card = document.createElement("div");
     card.className = "history-card";
     const isSafe = item.ringkasan_status === "Aman";
     card.innerHTML = `
       <div>
         <strong>${item.nopol}</strong>
-        <div style="font-size:0.75rem; color:var(--text-muted);">${item.tanggal_checkin.replace("T", " ")}</div>
+        <div style="font-size:0.75rem; color:var(--text-muted);">${(item.tanggal_checkin || "").replace("T", " ")}</div>
         <div style="font-size:0.75rem; margin-top:2px;">Checker: ${item.checker}</div>
       </div>
       <div>
@@ -310,14 +329,20 @@ function filterRekapData() {
   });
 }
 
+// 8. Tampilkan Detail Modal (Dukungan Link Drive & Base64)
 function openDetailModal(item) {
   const modal = document.getElementById("detailModal");
   document.getElementById("modalNopol").innerText = `${item.nopol} - Detail Inspeksi`;
   const body = document.getElementById("modalBody");
   
-  const details = typeof item.detail_checklist === "string" ? JSON.parse(item.detail_checklist) : item.detail_checklist;
+  let details = [];
+  try {
+    details = typeof item.detail_checklist === "string" ? JSON.parse(item.detail_checklist) : item.detail_checklist;
+  } catch (e) {
+    details = [];
+  }
   
-  let detailsHtml = details.map(d => `
+  let detailsHtml = (details || []).map(d => `
     <div style="padding: 6px 0; border-bottom: 1px solid var(--border-color); font-size: 0.8rem;">
       <strong>${d.item}</strong>: 
       <span style="color: ${d.status === 'Aman' ? 'var(--color-safe)' : 'var(--color-danger)'}; font-weight:600;">
@@ -327,12 +352,20 @@ function openDetailModal(item) {
     </div>
   `).join("");
 
-  let fotoHtml = item.foto_base64 
-    ? `<img src="${item.foto_base64}" style="width:100%; border-radius:8px; margin-top:10px;" alt="Kondisi Unit"/>` 
-    : '';
+  let fotoHtml = "";
+  if (item.foto_base64) {
+    fotoHtml = `<img src="${item.foto_base64}" style="width:100%; border-radius:8px; margin-top:10px;" alt="Kondisi Unit"/>`;
+  } else if (item.foto_drive_url) {
+    fotoHtml = `
+      <div style="margin-top:12px;">
+        <a href="${item.foto_drive_url}" target="_blank" style="color:var(--accent-color); font-size:0.85rem; font-weight:600; text-decoration:none;">
+          🔗 Buka Foto di Google Drive
+        </a>
+      </div>`;
+  }
 
   body.innerHTML = `
-    <p style="font-size:0.8rem; margin-bottom: 8px;"><strong>Waktu:</strong> ${item.tanggal_checkin.replace("T", " ")} | <strong>Odo:</strong> ${item.odometer} KM</p>
+    <p style="font-size:0.8rem; margin-bottom: 8px;"><strong>Waktu:</strong> ${(item.tanggal_checkin || "").replace("T", " ")} | <strong>Odo:</strong> ${item.odometer} KM</p>
     <div style="max-height: 250px; overflow-y:auto; margin-bottom: 10px;">${detailsHtml}</div>
     ${fotoHtml}
   `;
@@ -345,17 +378,22 @@ function populateCetakOptions() {
   rawInspectionData.forEach((d, i) => {
     const opt = document.createElement("option");
     opt.value = i;
-    opt.innerText = `${d.nopol} - ${d.tanggal_checkin.slice(0, 10)}`;
+    opt.innerText = `${d.nopol} - ${(d.tanggal_checkin || "").slice(0, 10)}`;
     select.appendChild(opt);
   });
 }
 
-// 7. Render Format Dokumen Cetak Standar Industri
+// 9. Format Cetak Lembar Unit
 function renderPrintLayout(data) {
   const container = document.getElementById("printableArea");
-  const details = typeof data.detail_checklist === "string" ? JSON.parse(data.detail_checklist) : data.detail_checklist;
+  let details = [];
+  try {
+    details = typeof data.detail_checklist === "string" ? JSON.parse(data.detail_checklist) : data.detail_checklist;
+  } catch (e) {
+    details = [];
+  }
 
-  let tableRows = details.map((d, idx) => `
+  let tableRows = (details || []).map((d, idx) => `
     <tr>
       <td>${idx + 1}</td>
       <td>${d.item}</td>
@@ -363,6 +401,13 @@ function renderPrintLayout(data) {
       <td>${d.note || '-'}</td>
     </tr>
   `).join("");
+
+  let fotoPrint = "";
+  if (data.foto_base64) {
+    fotoPrint = `<div style="margin-top: 15px;"><strong>Dokumentasi Fisik Unit:</strong><br><img src="${data.foto_base64}" style="max-height: 200px; border: 1px solid #CCC; margin-top: 5px;"></div>`;
+  } else if (data.foto_drive_url) {
+    fotoPrint = `<div style="margin-top: 10px; font-size:11px;"><strong>Lampiran Foto (Drive):</strong> ${data.foto_drive_url}</div>`;
+  }
 
   container.innerHTML = `
     <div class="print-header">
@@ -376,7 +421,7 @@ function renderPrintLayout(data) {
         <td style="border: none; width: 50%;"><strong>Odometer:</strong> ${data.odometer} KM</td>
       </tr>
       <tr style="border: none;">
-        <td style="border: none;"><strong>Tanggal/Waktu:</strong> ${data.tanggal_checkin.replace("T", " ")}</td>
+        <td style="border: none;"><strong>Tanggal/Waktu:</strong> ${(data.tanggal_checkin || "").replace("T", " ")}</td>
         <td style="border: none;"><strong>Petugas Checker:</strong> ${data.checker}</td>
       </tr>
     </table>
@@ -395,12 +440,7 @@ function renderPrintLayout(data) {
       </tbody>
     </table>
 
-    ${data.foto_base64 ? `
-      <div style="margin-top: 15px;">
-        <strong>Dokumentasi Fisik Unit:</strong><br>
-        <img src="${data.foto_base64}" style="max-height: 200px; border: 1px solid #CCC; margin-top: 5px;">
-      </div>
-    ` : ''}
+    ${fotoPrint}
 
     <div class="signatures">
       <div class="sign-col">
